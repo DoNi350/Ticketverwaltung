@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Alle Tickets</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      cursor: pointer;
+    }
+    th {
+      background-color: #f4f4f4;
+      text-align: left;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #e8f0fe;
+    }
+    .actions a, .actions button {
+      padding: 5px 10px;
+      background: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+    }
+    .actions a:hover, .actions button:hover {
+      background-color: #0056b3;
+    }
+    select {
+      margin-bottom: 15px;
+      padding: 6px;
+      font-size: 14px;
+    }
+  </style>
+  <script>
+    function sortTable(n) {
+      const table = document.getElementById("ticketTable");
+      let rows = Array.from(table.rows).slice(1);
+      let asc = table.getAttribute("data-sort-dir") !== "asc";
+      rows.sort((a, b) => {
+        const aText = a.cells[n].innerText.toLowerCase();
+        const bText = b.cells[n].innerText.toLowerCase();
+        return asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+      });
+      rows.forEach(row => table.tBodies[0].appendChild(row));
+      table.setAttribute("data-sort-dir", asc ? "asc" : "desc");
+    }
+
+    function filterStatus() {
+      const status = document.getElementById("statusFilter").value.toLowerCase();
+      const rows = document.querySelectorAll("#ticketTable tbody tr");
+      rows.forEach(row => {
+        const rowStatus = row.cells[6].innerText.toLowerCase();
+        row.style.display = status === "alle" || rowStatus === status ? "" : "none";
+      });
+    }
+
+    function deleteTicket(ticketNumber) {
+      const pw = prompt("Passwort zum Löschen eingeben:");
+      if (pw === "BTS-01") {
+        if (confirm("Möchtest du das Ticket " + ticketNumber + " wirklich löschen?")) {
+          window.location.href = "/delete_ticket/" + encodeURIComponent(ticketNumber);
+        }
+      } else if (pw !== null) {
+        alert("Falsches Passwort.");
+      }
+    }
+  </script>
+</head>
+<body>
+  <h1>Alle Tickets</h1>
+
+  <label for="statusFilter">Status filtern:</label>
+  <select id="statusFilter" onchange="filterStatus()">
+    <option value="alle">Alle</option>
+    <option value="offen">Offen</option>
+    <option value="externe servicestelle">Externe Servicestelle</option>
+    <option value="in bearbeitung">in bearbeitung</option>
+    <option value="geschlossen">geschlossen</option>
+  </select>
+
+  <table id="ticketTable" data-sort-dir="asc">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Ticket-Nr.</th>
+        <th onclick="sortTable(1)">Typ</th>
+        <th onclick="sortTable(2)">Firma</th>
+        <th onclick="sortTable(3)">Kontakt</th>
+        <th onclick="sortTable(4)">Marke</th>
+        <th onclick="sortTable(5)">Modell</th>
+        <th onclick="sortTable(6)">Status</th>
+        <th onclick="sortTable(7)">Erstellt am</th>
+        <th>Aktion</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ticket in tickets %}
+        {% set data = data_eval(ticket['data']) %}
+        <tr>
+          <td>{{ ticket['ticket_number'] }}</td>
+          <td>{{ ticket['ticket_type'] }}</td>
+          <td>{{ data.get('company', '-') }}</td>
+          <td>{{ data.get('contact', '-') }}</td>
+          <td>{{ data.get('brand', '-') }}</td>
+          <td>{{ data.get('model', '-') }}</td>
+          <td>{{ ticket['status'] }}</td>
+          <td>{{ ticket['created_at'] }}</td>
+          <td class="actions">
+            <a href="{{ url_for('edit_ticket', ticket_number=ticket['ticket_number']) }}">Bearbeiten</a>
+            <button onclick="deleteTicket('{{ ticket['ticket_number'] }}')">Löschen</button>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
